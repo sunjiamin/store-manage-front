@@ -16,23 +16,18 @@
                                 <Input type="text" v-model="searchForm.productSpec" clearable placeholder="请输入配件规格" style="width: 200px"/>
                               </Form-item>
                               <Form-item label="配件类别" prop="sex">
-                                <Select v-model="searchForm.productClass" placeholder="请选择" clearable style="width: 200px">
-                                  <Option value="0">女</Option>
-                                  <Option value="1">男</Option>
-                                </Select>
+
+
+                                 <Select v-model="searchForm.productClass"  @on-change="selectProductClass"  placeholder="请选择" clearable style="width: 200px">
+                                    <Option v-for="item in productClassList" :value="item.id" :key="item.id">{{ item.className }}</Option>
+                                 </Select>
                               </Form-item>
                               <Form-item label="供应商" prop="type">
-                                <Select v-model="searchForm.supplierId" placeholder="请选择" clearable style="width: 200px">
-                                  <Option value="0">AAA</Option>
-                                  <Option value="1">BBB</Option>
+                                <Select v-model="searchForm.supplier" placeholder="请选择" clearable style="width: 200px">
+                                   <Option v-for="item in supplierList" :value="item.id" :key="item.id">{{ item.name }}</Option>
                                 </Select>
                               </Form-item>
-                              <Form-item label="品牌" prop="brandId">
-                                <Select v-model="searchForm.brandId" placeholder="请选择" clearable style="width: 200px">
-                                  <Option value="0">CCC</Option>
-                                  <Option value="-1">DDD</Option>
-                                </Select>
-                              </Form-item>
+
                               <Form-item label="创建时间" prop="status">
                                 <DatePicker type="daterange" format="yyyy-MM-dd" clearable @on-change="selectDateRange" placeholder="选择起始时间" style="width: 200px"></DatePicker>
                               </Form-item>
@@ -47,7 +42,7 @@
             </Form>
           </Row>
           <Row class="operation margin-top-10 ">
-            <Button @click="addProduct" type="primary" icon="plus-round">添加配件</Button>
+            <Button @click="addProduct" type="primary" v-hasButton="'add'"  icon="plus-round">添加配件</Button>
             <Button @click="delAll" type="ghost" icon="trash-a">批量删除</Button>
             <Dropdown @on-click="handleDropdown">
               <Button type="ghost">
@@ -90,10 +85,21 @@
         <FormItem label="配件规格" prop="productSpec">
           <Input v-model="productForm.productSpec"/>
         </FormItem>
-
+        <FormItem label="配件进价" prop="productPrice">
+          <Input v-model="productForm.productPrice"/>
+        </FormItem>
+        <FormItem label="配件卖价" prop="productSalePrice">
+          <Input v-model="productForm.productSalePrice"/>
+        </FormItem>
         <FormItem label="配件类别" prop="productClass">
           <Select v-model="productForm.productClass"  @on-change="selectProductClass">
             <Option v-for="item in productClassList" :value="item.id" :key="item.id">{{ item.className }}</Option>
+          </Select>
+        </FormItem>
+
+        <FormItem label="供应商" prop="supplier">
+          <Select v-model="productForm.supplier"  @on-change="selectSupplier">
+            <Option v-for="item in supplierList" :value="item.id" :key="item.id">{{ item.name }}</Option>
           </Select>
         </FormItem>
 
@@ -118,7 +124,11 @@
 </template>
 
 <script>
+  import util from "@/libs/util.js";
   export default {
+    components:{
+      util
+    },
     name: "product",
     data() {
       const validatePassword = (rule, value, callback) => {
@@ -148,7 +158,7 @@
           productCode: "",
           productSpec: "",
           productClass: "",
-          supplierId: "",
+          supplier: "",
           brandId: "",
           pageNumber: 1,
           pageSize: 10,
@@ -165,6 +175,7 @@
         },
         userRoles: [],
         productClassList: [],
+        supplierList: [],
         unitList:[],
         errorPass: "",
         productFormValidate: {
@@ -173,6 +184,12 @@
           ],
           productCode: [
             { required: true, message: "配件代码不能为空", trigger: "blur" }
+          ],
+          productPrice: [
+            { required: true, message: "配件进价不能为空", trigger: "blur" }
+          ],
+          productSalePrice: [
+            { required: true, message: "配件卖价不能为空", trigger: "blur" }
           ],
           productSpec: [
             { required: true, message: "配件规格不能为空", trigger: "blur" }
@@ -196,7 +213,7 @@
 
           },
           {
-            title: "配件代码",
+            title: "配件编码",
             key: "productCode",
             width: 110,
             sortable: true
@@ -208,28 +225,55 @@
             sortable: true
           },
           {
-            title: "类别",
-            key: "productClass",
+            title: "单位",
+            key: "unitcn",
             width: 150,
-            render: (h, params) => {
-              return h("div", params.row.productClass.className);
-            }
+            sortable: true
+          },
+          {
+            title: "类别",
+            key: "productClassName",
+            width: 150,
+            // render: (h, params) => {
+            //   return h("div", params.row.productClass.className);
+            // }
+          },
+          {
+            title: "配件进价",
+            key: "productPrice",
+            width: 150,
+            sortable: true
+          },
+          {
+            title: "配件卖价",
+            key: "productSalePrice",
+            width: 150,
+            sortable: true
           },
           {
             title: "供应商",
-            key: "supplierId",
+            key: "supplierName",
             width: 150,
-            sortable: true
+            // render: (h, params) => {
+            //   return h("div", params.row.supplier.name);
+            // }
           },
-          {
-            title: "品牌名",
-            key: "brandId",
-            width: 150,
-            sortable: true
-          },
+          // {
+          //   title: "品牌名",
+          //   key: "brandId",
+          //   width: 150,
+          //   sortable: true
+          // },
           {
             title: "创建时间",
             key: "createTime",
+            sortable: true,
+            sortType: "desc",
+            width: 150
+          },
+          {
+            title: "最后修改时间",
+            key: "updateTime",
             sortable: true,
             sortType: "desc",
             width: 150
@@ -265,7 +309,7 @@
                     {
                       props: {
                         type: "error",
-                        size: "small"
+                        size: "small",
                       },
                       on: {
                         click: () => {
@@ -289,6 +333,8 @@
       init() {
         this.getProductList();
         this.getUintList();
+        this.getSupplierList();
+        this.getProductClassList();
       },
 
       changePage(v) {
@@ -314,9 +360,24 @@
           if (res.success === true) {
             this.data = res.result.content;
             this.total = res.result.totalElements;
+            this.handleUnit(this.data);
           }
         });
       },
+      //处理单位转化中文
+      handleUnit(data){
+        // this.unitList
+        data.forEach((item, index) => {
+          this.unitList.forEach((t, index2) => {
+             if(t.id === item.unit){
+               item.unitcn = t.value;
+             }
+          });
+        });
+        this.data = data;
+      },
+
+
       handleSearch() {
         this.searchForm.pageNumber = 1;
         this.searchForm.pageSize = 10;
@@ -340,7 +401,16 @@
       getProductClassList() {
         this.getRequest("/productClass/getAll").then(res => {
           if (res.success === true) {
+            res.result.unshift({id:"",className:"全部类别"});
             this.productClassList = res.result;
+          }
+        });
+      },
+      getSupplierList() {
+        this.getRequest("/supplier/getAll").then(res => {
+          if (res.success === true) {
+            res.result.unshift({id:"",name:"全部供应商"});
+            this.supplierList = res.result;
           }
         });
       },
@@ -362,7 +432,7 @@
             content: "您确认要导出所选 " + this.selectCount + " 条数据?",
             onOk: () => {
               this.$refs.exportTable.exportCsv({
-                filename: "用户数据"
+                filename: "配件数据."+util.getCurrentDatetime2()
               });
             }
           });
@@ -371,6 +441,7 @@
         }
       },
       selectProductClass(v) {},
+      selectSupplier(v){},
       cancelUser() {
         this.userModalVisible = false;
       },
@@ -419,6 +490,7 @@
         let productInfo = JSON.parse(str);
         this.productForm = productInfo;
         this.productForm.productClass = productInfo.productClass.id;
+        this.productForm.supplier = productInfo.supplier.id;
         // let selectRolesId = [];
         // this.productForm.roles.forEach(function(e) {
         //   selectRolesId.push(e.id);
@@ -430,7 +502,7 @@
       remove(v) {
         this.$Modal.confirm({
           title: "确认删除",
-          content: "您确认要删除用户 " + v.username + " ?",
+          content: "您确认要删除用户 " + v.productName + " ?",
           onOk: () => {
             this.deleteRequest("/product/delByIds", { ids: v.id }).then(res => {
               if (res.success === true) {
@@ -485,7 +557,7 @@
     },
     mounted() {
       this.init();
-      this.getProductClassList();
+
     }
   };
 </script>

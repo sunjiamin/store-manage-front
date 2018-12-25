@@ -13,7 +13,7 @@ let base = '/store';
 //axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 
 // 超时设定
-axios.defaults.timeout = 10000;
+axios.defaults.timeout = 100000;
 axios.defaults.baseURL = process.env.API_ROOT;  //'http://127.0.0.1:9090';
 
 

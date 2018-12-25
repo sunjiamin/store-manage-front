@@ -55,7 +55,11 @@
 </template>
 
 <script>
+  import util from "@/libs/util.js";
   export default {
+    components:{
+      util
+    },
     name: "inputWarehouseDetail",
     data() {
       const validateMobile = (rule, value, callback) => {
@@ -104,32 +108,28 @@
             title: "配件编码",
             key: "productCode",
             width: 110,
-            render: (h, params) => {
-              return h("div", params.row.product.productCode);
-            }
+            // render: (h, params) => {
+            //   return h("div", params.row.product.productCode);
+            // }
           },
           {
             title: "配件名称",
-            key: "product",
+            key: "productName",
             width: 110,
-            render: (h, params) => {
-              return h("div", params.row.product.productName);
-            }
+            // render: (h, params) => {
+            //   return h("div", params.row.product.productName);
+            // }
 
           },
           {
             title: "规格",
             key: "productSpec",
             width: 110,
-            render: (h, params) => {
-              return h("div", params.row.product.productSpec);
-            }
+            // render: (h, params) => {
+            //   return h("div", params.row.product.productSpec);
+            // }
           },
-          {
-            title: "入库单位",
-            key: "unit",
-            sortable: true
-          },
+
           {
             title: "入库单价",
             key: "price",
@@ -222,7 +222,7 @@
             content: "您确认要导出所选 " + this.selectCount + " 条数据?",
             onOk: () => {
               this.$refs.exportTable.exportCsv({
-                filename: "入库记录"
+                filename: "入库记录."+util.getCurrentDatetime2()
               });
             }
           });

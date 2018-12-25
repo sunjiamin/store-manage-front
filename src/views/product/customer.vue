@@ -99,7 +99,11 @@
 </template>
 
 <script>
+  import util from "@/libs/util.js";
   export default {
+    components:{
+      util
+    },
     name: "customer",
     data() {
       const validateMobile = (rule, value, callback) => {
@@ -311,7 +315,7 @@
             content: "您确认要导出所选 " + this.selectCount + " 条数据?",
             onOk: () => {
               this.$refs.exportTable.exportCsv({
-                filename: "用户数据"
+                filename: "用户数据."+util.getCurrentDatetime2()
               });
             }
           });

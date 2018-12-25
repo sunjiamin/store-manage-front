@@ -5,17 +5,23 @@
         <Card>
           <Row>
             <Form ref="searchForm" :model="searchForm" inline :label-width="70" class="search-form">
-              <Form-item label="类别名" prop="className">
-                <Input type="text" v-model="searchForm.className" clearable placeholder="请输入用户名" style="width: 200px"/>
+              <Form-item label="姓名" prop="className">
+                <Input type="text" v-model="searchForm.name" clearable placeholder="请输入姓名" style="width: 200px"/>
               </Form-item>
-              <Form-item label="类别编码" prop="classCode">
-                <Input type="text" v-model="searchForm.classCode" clearable placeholder="请输入手机号" style="width: 200px"/>
+              <Form-item label="手机号" prop="classCode">
+                <Input type="text" v-model="searchForm.mobile" clearable placeholder="请输入手机号" style="width: 200px"/>
               </Form-item>
               <span v-if="drop">
-                              <Form-item label="创建时间" prop="status">
-                                <DatePicker type="daterange" format="yyyy-MM-dd" clearable @on-change="selectDateRange" placeholder="选择起始时间" style="width: 200px"></DatePicker>
-                              </Form-item>
-                            </span>
+                    <Form-item label="性别" prop="sex">
+                      <Select v-model="searchForm.sex" placeholder="请选择" clearable style="width: 200px">
+                        <Option value="0">女</Option>
+                        <Option value="1">男</Option>
+                      </Select>
+                    </Form-item>
+                    <Form-item label="创建时间" prop="status">
+                      <DatePicker type="daterange" format="yyyy-MM-dd" clearable @on-change="selectDateRange" placeholder="选择起始时间" style="width: 200px"></DatePicker>
+                    </Form-item>
+              </span>
               <Form-item style="margin-left:-35px;">
                 <Button @click="handleSearch" type="primary" icon="search">搜索</Button>
                 <Button @click="handleReset" type="ghost" >重置</Button>
@@ -26,7 +32,7 @@
             </Form>
           </Row>
           <Row class="operation">
-            <Button @click="addClass" type="primary" icon="plus-round">添加配件分类</Button>
+            <Button @click="addClass" type="primary" icon="plus-round">添加供应商</Button>
             <Button @click="delAll" type="ghost" icon="trash-a">批量删除</Button>
             <Dropdown @on-click="handleDropdown">
               <Button type="ghost">
@@ -46,29 +52,42 @@
             </Alert>
           </Row>
           <Row class="margin-top-10 searchable-table-con1">
-            <Table :loading="loading" border :columns="columns" :data="data" sortable="custom" @on-sort-change="changeSort" @on-selection-change="showSelect" ref="table"></Table>
+            <Table :loading="loading" border :columns="columns" :data="data" sortable="custom" @on-sort-change="changeSort"
+                   @on-selection-change="showSelect" ref="table"></Table>
             <Table :columns="columns" :data="exportData" ref="exportTable" style="display:none"></Table>
           </Row>
           <Row type="flex" justify="end" class="code-row-bg page">
             <Page :current="this.searchForm.pageNumber" :total="total" :page-size="this.searchForm.pageSize"
-                  @on-change="changePage" @on-page-size-change="changePageSize" :page-size-opts="[10,20,50,100,9999999]" size="small" show-total show-elevator show-sizer></Page>
+                  @on-change="changePage" @on-page-size-change="changePageSize" :page-size-opts="[2,10,20,50,100,9999999]" size="small" show-total show-elevator show-sizer></Page>
           </Row>
         </Card>
       </Col>
     </Row>
-    <Modal :title="modalTitle" v-model="classModalVisible" :mask-closable='false' :width="600">
-      <Form ref="classFrom" :model="classFrom" :label-width="80" :rules="classFromValidate">
-        <FormItem label="类别名" prop="className">
-          <Input v-model="classFrom.className"/>
+    <Modal :title="modalTitle" v-model="classModalVisible" :mask-closable='false' :width="800">
+      <Form ref="salePersonFrom" :model="salePersonFrom" :label-width="90" :rules="salePersonFromValidate">
+        <FormItem label="供应商姓名" prop="name">
+          <Input v-model="salePersonFrom.name"/>
         </FormItem>
-        <FormItem label="类别编码" prop="classCode"  >
-          <Input  v-model="classFrom.classCode"/>
+        <FormItem label="手机号" prop="mobile">
+          <Input v-model="salePersonFrom.mobile"/>
+        </FormItem>
+        <FormItem label="邮箱" prop="email">
+          <Input v-model="salePersonFrom.email"/>
+        </FormItem>
+        <FormItem label="地址" prop="address">
+          <Input v-model="salePersonFrom.address"/>
+        </FormItem>
+
+        <FormItem label="性别" prop="sex">
+          <RadioGroup v-model="salePersonFrom.sex">
+            <Radio :label="1">男</Radio>
+            <Radio :label="0">女</Radio>
+          </RadioGroup>
         </FormItem>
 
         <FormItem label="备注" prop="remark">
-          <Input v-model="classFrom.remark"/>
+          <Input v-model="salePersonFrom.remark"/>
         </FormItem>
-
 
       </Form>
       <div slot="footer">
@@ -85,8 +104,16 @@
     components:{
       util
     },
-    name: "product-class",
+    name: "supplier",
     data() {
+      const validateMobile = (rule, value, callback) => {
+        var reg = /^[1][3,4,5,7,8][0-9]{9}$/;
+        if (!reg.test(value)) {
+          callback(new Error("手机号格式错误"));
+        } else {
+          callback();
+        }
+      };
       return {
         loading: true,
         drop: false,
@@ -95,10 +122,10 @@
         selectCount: 0,
         selectList: [],
         searchForm: {
-          className: "",
-          classCode: "",
-          status: "",
-          remark:"",
+          name: "",
+          mobile: "",
+          email: "",
+          sex: "",
           pageNumber: 1,
           pageSize: 10,
           sort: "createTime",
@@ -109,40 +136,62 @@
         modalType: 0,
         classModalVisible: false,
         modalTitle: "",
-        classFrom: {
-
+        salePersonFrom: {
+          sex: 1,
         },
         classRoles: [],
         roleList: [],
         errorPass: "",
-        classFromValidate: {
-          className: [
-            { required: true, message: "类别名不能为空", trigger: "blur" }
+        salePersonFromValidate: {
+          name: [
+            { required: true, message: "用户名不能为空", trigger: "blur" }
           ],
-          classCode: [
-            { required: true, message: "类别编码不能为空", trigger: "blur" }
+          mobile: [
+            { required: true, message: "手机号不能为空", trigger: "blur" },
+            { validator: validateMobile, trigger: "blur" }
           ],
-          remark: [
-            { required: true, message: "类别备注不能为空", trigger: "blur" }
-          ]
+
         },
         submitLoading: false,
         columns: [
           {
             type: "selection",
             width: 60,
-            align: "center"
+            align: "center",
+            fixed:"left",
           },
           {
-            title: "类别名",
-            key: "className",
-
+            title: "客户名",
+            key: "name",
+            width: 150,
             sortable: true
           },
           {
-            title: "类别编码",
-            key: "classCode",
+            title: "手机",
+            key: "mobile",
+            width: 150,
             sortable: true
+          },
+          {
+            title: "邮箱",
+            key: "email",
+            width: 200,
+            sortable: true
+          },
+          {
+            title: "性别",
+            key: "sex",
+            width: 70,
+            align: "center",
+            render: (h, params) => {
+              let re = "";
+              if (params.row.sex === 1) {
+                re = "男";
+              } else if (params.row.sex === 0) {
+                re = "女";
+              }
+              return h("div", re);
+            }
           },
           {
             title: "备注",
@@ -159,44 +208,45 @@
           {
             title: "操作",
             key: "action",
-            width: 260,
+            width: 220,
+            fixed:"right",
             align: "center",
             render: (h, params) => {
-                return h("div", [
-                  h(
-                    "Button",
-                    {
-                      props: {
-                        type: "primary",
-                        size: "small"
-                      },
-                      style: {
-                        marginRight: "5px"
-                      },
-                      on: {
-                        click: () => {
-                          this.edit(params.row);
-                        }
-                      }
+              return h("div", [
+                h(
+                  "Button",
+                  {
+                    props: {
+                      type: "primary",
+                      size: "small"
                     },
-                    "编辑"
-                  ) ,
-                  h(
-                    "Button",
-                    {
-                      props: {
-                        type: "error",
-                        size: "small"
-                      },
-                      on: {
-                        click: () => {
-                          this.remove(params.row);
-                        }
-                      }
+                    style: {
+                      marginRight: "5px"
                     },
-                    "删除"
-                  )
-                ]);
+                    on: {
+                      click: () => {
+                        this.edit(params.row);
+                      }
+                    }
+                  },
+                  "编辑"
+                ) ,
+                h(
+                  "Button",
+                  {
+                    props: {
+                      type: "error",
+                      size: "small"
+                    },
+                    on: {
+                      click: () => {
+                        this.remove(params.row);
+                      }
+                    }
+                  },
+                  "删除"
+                )
+              ]);
             }
           }
         ],
@@ -207,15 +257,15 @@
     },
     methods: {
       init() {
-        this.getClassList();
+        this.getSupplierList();
       },
       changePage(v) {
         this.searchForm.pageNumber = v;
-        this.getClassList();
+        this.getSupplierList();
       },
       changePageSize(v) {
         this.searchForm.pageSize = v;
-        this.getClassList();
+        this.getSupplierList();
       },
       selectDateRange(v) {
         if (v) {
@@ -223,10 +273,10 @@
           this.searchForm.endDate = v[1];
         }
       },
-      getClassList() {
+      getSupplierList() {
         // 多条件搜索用户列表
         this.loading = true;
-        this.getRequest("/productClass/getByCondition", this.searchForm).then(res => {
+        this.getRequest("/supplier/getByCondition", this.searchForm).then(res => {
           this.loading = false;
           if (res.success === true) {
             this.data = res.result.content;
@@ -265,12 +315,12 @@
             content: "您确认要导出所选 " + this.selectCount + " 条数据?",
             onOk: () => {
               this.$refs.exportTable.exportCsv({
-                filename: "配件分类数据."+util.getCurrentDatetime2()
+                filename: "供应商数据."+util.getCurrentDatetime2()
               });
             }
           });
         } else if (name === "refresh") {
-          this.getClassList();
+          this.getsupplierList();
         }
       },
       selectRoles(v) {},
@@ -278,19 +328,19 @@
         this.classModalVisible = false;
       },
       submitClass() {
-        this.$refs.classFrom.validate(valid => {
+        this.$refs.salePersonFrom.validate(valid => {
           if (valid) {
-            let url = "/productClass/add";
+            let url = "/supplier/add";
             if (this.modalType === 1) {
               // 编辑用户
-              url = "/productClass/edit";
+              url = "/supplier/edit";
             }else{
-              delete this.classFrom.id;
-              url = "/productClass/add";
+              delete this.salePersonFrom.id;
+              url = "/supplier/add";
             }
 
             this.submitLoading = true;
-            this.postRequest(url, this.classFrom).then(res => {
+            this.postRequest(url, this.salePersonFrom).then(res => {
               this.submitLoading = false;
               if (res.success === true) {
                 this.$Message.success("操作成功");
@@ -303,14 +353,14 @@
       },
       addClass() {
         this.modalType = 0;
-        this.modalTitle = "添加配件类别";
-        this.$refs.classFrom.resetFields();
+        this.modalTitle = "添加供应商";
+        this.$refs.salePersonFrom.resetFields();
         this.classModalVisible = true;
       },
       edit(v) {
         this.modalType = 1;
-        this.modalTitle = "编辑配件类别";
-        this.$refs.classFrom.resetFields();
+        this.modalTitle = "编辑供应商";
+        this.$refs.salePersonFrom.resetFields();
         // 转换null为""
         for (let attr in v) {
           if (v[attr] === null) {
@@ -319,16 +369,16 @@
         }
         let str = JSON.stringify(v);
         let classInfo = JSON.parse(str);
-        this.classFrom = classInfo;
+        this.salePersonFrom = classInfo;
 
         this.classModalVisible = true;
       } ,
       remove(v) {
         this.$Modal.confirm({
           title: "确认删除",
-          content: "您确认要删除配件 " + v.className + " ?",
+          content: "您确认要删除供应商 " + v.name + " ?",
           onOk: () => {
-            this.deleteRequest("/productClass/delByIds", { ids: v.id }).then(res => {
+            this.deleteRequest("/supplier/delByIds", { ids: v.id }).then(res => {
               if (res.success === true) {
                 this.$Message.success("删除成功");
                 this.init();
@@ -369,7 +419,7 @@
               ids += e.id + ",";
             });
             ids = ids.substring(0, ids.length - 1);
-            this.deleteRequest("/productClass/delByIds", { ids: ids }).then(res => {
+            this.deleteRequest("/supplier/delByIds", { ids: ids }).then(res => {
               if (res.success === true) {
                 this.$Message.success("删除成功");
                 this.init();
@@ -386,5 +436,5 @@
 </script>
 
 <style scoped>
-  @import "./productClass.less";
+  @import "./supplier.less";
 </style>

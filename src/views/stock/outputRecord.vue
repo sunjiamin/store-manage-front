@@ -5,7 +5,17 @@
         <Card>
           <Row>
             <Form ref="searchForm" :model="searchForm" inline :label-width="70" class="search-form">
-              <Form-item label="支付状态" prop="type">
+
+              <Form-item label="配件编码" prop="productName">
+                <Input type="text" v-model="searchForm.productCode" clearable placeholder="请输入配件编码" style="width: 200px"/>
+              </Form-item>
+
+              <Form-item label="配件名" prop="productName">
+                <Input type="text" v-model="searchForm.productName" clearable placeholder="请输入配件名" style="width: 200px"/>
+              </Form-item>
+
+              <span v-if="drop">
+                 <Form-item label="支付状态" prop="type">
                 <Select v-model="searchForm.payStatus" placeholder="请选择" clearable style="width: 200px">
                   <Option value="">全部</Option>
                   <Option value="1">收款完成</Option>
@@ -14,13 +24,28 @@
                 </Select>
               </Form-item>
               <Form-item label="创建时间" prop="status">
-                <DatePicker type="daterange" format="yyyy-MM-dd" clearable @on-change="selectDateRange" placeholder="选择起始时间" style="width: 200px"></DatePicker>
+                <DatePicker type="daterange" format="yyyy-MM-dd" clearable @on-change="selectDateRange" placeholder="选择起始时间"
+                            style="width: 200px"></DatePicker>
               </Form-item>
+                 <FormItem label="销售员" prop="supplier">
+                <Select v-model="searchForm.salePersonId"  style="width: 200px" >
+                  <Option v-for="item in salePesronList" :value="item.id" :key="item.id">{{ item.userName }}</Option>
+                </Select>
+              </FormItem>
+
+              <FormItem label="客户" prop="supplier">
+                <Select v-model="searchForm.customerId" style="width: 200px" >
+                  <Option v-for="item in customerList" :value="item.id" :key="item.id">{{ item.name }}</Option>
+                </Select>
+              </FormItem>
+              </span>
 
               <Form-item style="margin-left:-35px;">
                 <Button @click="handleSearch" type="primary" icon="search">搜索</Button>
                 <Button @click="handleReset" type="ghost" >重置</Button>
-
+                <a class="drop-down" @click="dropDown">{{dropDownContent}}
+                  <Icon :type="dropDownIcon"></Icon>
+                </a>
               </Form-item>
             </Form>
           </Row>
@@ -73,9 +98,9 @@
           <Input   v-model="outputWarehouseDetailFrom.nopayAmount"/>
         </FormItem>
 
-        <FormItem label="附加费" prop="price" >
-          <Input   v-model="outputWarehouseDetailFrom.surcharge"/>
-        </FormItem>
+        <!--<FormItem label="附加费" prop="price" >-->
+          <!--<Input   v-model="outputWarehouseDetailFrom.surcharge"/>-->
+        <!--</FormItem>-->
 
         <FormItem label="出库备注" prop="remark">
           <Input v-model="outputWarehouseDetailFrom.remark"/>
@@ -92,7 +117,11 @@
 </template>
 
 <script>
+  import util from "@/libs/util.js";
   export default {
+    components:{
+      util
+    },
     name: "outputWarehouseDetail",
     data() {
       const validateMobile = (rule, value, callback) => {
@@ -112,6 +141,8 @@
         selectList: [],
         searchForm: {
           productName: "",
+          salePersonId:"",
+          customerId:"",
           pageNumber: 1,
           pageSize: 10,
           sort: "createTime",
@@ -127,6 +158,8 @@
         },
         classRoles: [],
         roleList: [],
+        customerList:[],
+        salePesronList:[],
         errorPass: "",
 
         submitLoading: false,
@@ -240,46 +273,46 @@
           },
           {
             title: "配件编码",
-            key: "product.productCode",
-            width: 110,
-            fixed: "left",
-            render: (h, params) => {
-              return h("div", params.row.product.productCode);
-            }
+            key: "productCode",
+            width: 150,
+            fixed: "left"
+            // render: (h, params) => {
+            //   return h("div", params.row.product.productCode);
+            // }
           },
           {
             title: "配件名称",
-            key: "product.productName",
+            key: "productName",
             fixed: "left",
-            width: 110,
-            render: (h, params) => {
-              return h("div", params.row.product.productName);
-            }
+            width: 150
+            // render: (h, params) => {
+            //   return h("div", params.row.product.productName);
+            // }
 
           },
           {
             title: "规格",
-            key: "product.productSpec",
-            width: 110,
-            render: (h, params) => {
-              return h("div", params.row.product.productSpec);
-            }
+            key: "productSpec",
+            width: 150
+            // render: (h, params) => {
+            //   return h("div", params.row.product.productSpec);
+            // }
           },
           {
             title: "销售员",
             width: 110,
-            key:"salePerson.userName",
-            render: (h, params) => {
-              return h("div", params.row.salePerson.userName);
-            }
+            key:"salePersonName"
+            // render: (h, params) => {
+            //   return h("div", params.row.salePerson.userName);
+            // }
           },
           {
             title: "客户",
-            key: "customer.name",
-            width: 110,
-            render: (h, params) => {
-              return h("div", params.row.customer.name);
-            }
+            key: "customerName",
+            width: 110
+            // render: (h, params) => {
+            //   return h("div", params.row.customer.name);
+            // }
           },
           {
             title: "出库单价",
@@ -315,13 +348,19 @@
           {
             title: "出库时间",
             key: "createTime",
-            width: 110,
+            width: 150,
+            sortable: true
+          },
+          {
+            title: "最后修改时间",
+            key: "updateTime",
+            width: 150,
             sortable: true
           },
           {
             title: "备注",
             key: "remark",
-            width: 110,
+            width: 150,
             sortable: true
           }
 
@@ -333,6 +372,8 @@
     methods: {
       init() {
         this.getoutputList();
+        this.getCustomerList();
+        this.getSaleList();
       },
       changePage(v) {
         this.searchForm.pageNumber = v;
@@ -348,14 +389,31 @@
           this.searchForm.endDate = v[1];
         }
       },
+      getCustomerList() {
+        this.getRequest("/customer/getAll").then(res => {
+          if (res.success === true) {
+            res.result.unshift({id:"",name:"全部客户"});
+            this.customerList = res.result;
+          }
+        });
+      },
+      getSaleList() {
+        this.getRequest("/salePerson/getAll", this.salePersonSearchForm).then(res => {
+          if (res.success === true) {
+            res.result.unshift({id:"",userName:"全部销售员"});
+            this.salePesronList = res.result;
+          }
+        });
+      },
       getoutputList() {
         // 多条件搜索用户列表
         this.loading = true;
         this.getRequest("/outputWarehouseDetail/getByCondition", this.searchForm).then(res => {
           this.loading = false;
           if (res.success === true) {
-            this.data = res.result.content;
-            this.total = res.result.totalElements;
+            debugger
+            this.data = res.result.records;
+            this.total = res.result.total;
           }
         });
       },
@@ -390,7 +448,7 @@
             content: "您确认要导出所选 " + this.selectCount + " 条数据?",
             onOk: () => {
               this.$refs.exportTable.exportCsv({
-                filename: "出库记录"
+                filename: "出库记录."+util.getCurrentDatetime2()
               });
             }
           });
@@ -431,9 +489,9 @@
         let str = JSON.stringify(v);
         let outputWarehouseDetailInfo = JSON.parse(str);
         this.outputWarehouseDetailFrom = outputWarehouseDetailInfo;
-        this.outputWarehouseDetailFrom.salePersonId = v.salePerson.id;
-        this.outputWarehouseDetailFrom.productId = v.product.id;
-        this.outputWarehouseDetailFrom.customerId = v.customer.id;
+        // this.outputWarehouseDetailFrom.salePersonId = v.salePerson.id;
+        // this.outputWarehouseDetailFrom.productId = v.product.id;
+        // this.outputWarehouseDetailFrom.customerId = v.customer.id;
         this.modalTitle = "【"+v.product.productName+"】出库记录";
         this.modalVisible = true;
       },

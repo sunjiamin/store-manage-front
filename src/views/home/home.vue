@@ -27,7 +27,7 @@
                             <div class="line-gray"></div>
                             <Row class="margin-top-8">
                                 <Col span="8"><p class="notwrap">本次登录地点:</p></Col>
-                                <Col span="16" class="padding-left-8">{{city}}</Col>
+                                <Col span="16" class="padding-left-8">高安</Col>
                             </Row>
                             <Row class="margin-top-8">
                                 <Col span="8"><p class="notwrap">天气:</p></Col>

@@ -5,15 +5,31 @@
         <Card>
           <Row>
             <Form ref="searchForm" :model="searchForm" inline :label-width="70" class="search-form">
+              <Form-item label="配件编码" prop="productCode">
+                <Input type="text" v-model="searchForm.productCode" clearable placeholder="请输入配件编码" style="width: 200px"/>
+              </Form-item>
+
               <Form-item label="配件名" prop="productName">
                 <Input type="text" v-model="searchForm.productName" clearable placeholder="请输入配件名" style="width: 200px"/>
               </Form-item>
-
+              <span v-if="drop">
+                <Form-item label="配件规格" prop="productSpec">
+                <Input type="text" v-model="searchForm.productSpec" clearable placeholder="请输入配件规格" style="width: 200px"/>
+                </Form-item>
+                <Form-item label="库存开始" prop="stockStart">
+                  <Input type="text"   v-model="searchForm.stockStart" clearable placeholder="请输入库存数量开始" style="width: 200px"/>
+                </Form-item>
+                <Form-item label="库存开始" prop="stockEnd">
+                  <Input type="text" v-model="searchForm.stockEnd" clearable placeholder="请输入库存数量开始" style="width: 200px"/>
+                </Form-item>
+              </span>
 
               <Form-item style="margin-left:-35px;">
                 <Button @click="handleSearch" type="primary" icon="search">搜索</Button>
                 <Button @click="handleReset" type="ghost" >重置</Button>
-
+                <a class="drop-down" @click="dropDown">{{dropDownContent}}
+                  <Icon :type="dropDownIcon"></Icon>
+                </a>
               </Form-item>
             </Form>
           </Row>
@@ -65,7 +81,11 @@
 </template>
 
 <script>
+  import util from "@/libs/util.js";
   export default {
+    components:{
+      util
+    },
     name: "productStock",
     data() {
       const validateInt = (rule, value, callback) => {
@@ -116,24 +136,59 @@
             fixed:"left",
           },
           {
-            title: "配件名",
-            key: "product",
+            title: "状态",
+            key:"stockStatus",
             render: (h, params) => {
-              return h("div", params.row.product.productName);
+              return h("div", params.row.stockStatus);
+            }
+            // render: (h, params) => {
+            //   let re = "";//1收款完成  2部分收款  3未收款  productStock  stockThreshold
+            //   if (params.row.productStock <=  params.row.stockThreshold ) {
+            //     return h("div", [
+            //       h(
+            //         "Tag",
+            //         {
+            //           props: {
+            //             color: "red"
+            //           }
+            //         },
+            //         "库存紧张"
+            //       )
+            //     ]);
+            //   }else {
+            //     return h("div", [
+            //       h(
+            //         "Tag",
+            //         {
+            //           props: {
+            //             color: "green"
+            //           }
+            //         },
+            //         "库存充足"
+            //       )
+            //     ]);
+            //   }
+            // }
+          },
+          {
+            title: "配件编码",
+            key: "productCode",
+            render: (h, params) => {
+              return h("div", params.row.productCode);
             }
           },
           {
-            title: "配件代码",
-            key: "productCode",
+            title: "配件名称",
+            key: "productName",
             render: (h, params) => {
-              return h("div", params.row.product.productCode);
+              return h("div", params.row.productName);
             }
           },
           {
             title: "规格",
             key: "productSpec",
             render: (h, params) => {
-              return h("div", params.row.product.productSpec);
+              return h("div", params.row.productSpec);
             }
           },
           {
@@ -142,11 +197,14 @@
             sortable: true
           },
           {
+            title: "阀值",
+            key: "stockThreshold",
+            sortable: true
+          },
+          {
             title: "最近更新时间",
             key: "updateTime",
             sortable: true,
-            sortType: "desc",
-
           },
           {
             title: "操作",
@@ -173,6 +231,21 @@
                     }
                   },
                   "编辑阀值"
+                ),
+                h(
+                  "Button",
+                  {
+                    props: {
+                      type: "error",
+                      size: "small",
+                    },
+                    on: {
+                      click: () => {
+                        this.remove(params.row);
+                      }
+                    }
+                  },
+                  "删除"
                 )
               ]);
             }
@@ -207,8 +280,13 @@
         this.getRequest("/productStock/getByCondition", this.searchForm).then(res => {
           this.loading = false;
           if (res.success === true) {
-            this.data = res.result.content;
-            this.total = res.result.totalElements;
+            if(res.result === null){
+              this.data = [];
+              this.total = 0;
+            }else{
+              this.data = res.result.content;
+              this.total = res.result.totalElements;
+            }
           }
         });
       },
@@ -243,7 +321,7 @@
             content: "您确认要导出所选 " + this.selectCount + " 条数据?",
             onOk: () => {
               this.$refs.exportTable.exportCsv({
-                filename: "配件库存"
+                filename: "配件库存."+util.getCurrentDatetime2()
               });
             }
           });
@@ -258,7 +336,7 @@
       setStockThreshold() {
         this.$refs.thresholdFrom.validate(valid => {
           if (valid) {
-            let url = "/productStock/update";
+            let url = "/productStock/edit";
 
             this.submitLoading = true;
             this.postRequest(url, this.thresholdFrom).then(res => {
@@ -275,7 +353,7 @@
 
       edit(v) {
         this.modalType = 1;
-        this.modalTitle = "设置阀值";
+        this.modalTitle = "设置阀值【"+v.product.productName+"】";
         this.$refs.thresholdFrom.resetFields();
         // 转换null为""
         for (let attr in v) {
@@ -292,9 +370,9 @@
       remove(v) {
         this.$Modal.confirm({
           title: "确认删除",
-          content: "您确认要删除销售员 " + v.userName + " ?",
+          content: "您确认要删除库存 " + v.product.productName + " ?",
           onOk: () => {
-            this.deleteRequest("/salePerson/delByIds", { ids: v.id }).then(res => {
+            this.deleteRequest("/productStock/delByIds", { ids: v.id }).then(res => {
               if (res.success === true) {
                 this.$Message.success("删除成功");
                 this.init();
@@ -314,6 +392,8 @@
         this.drop = !this.drop;
       },
       showSelect(e) {
+        debugger;
+
         this.exportData = e;
         this.selectList = e;
         this.selectCount = e.length;

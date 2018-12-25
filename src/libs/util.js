@@ -315,4 +315,55 @@ util.initRouterNode = function (routers, data) {
     }
 };
 
+/**
+ * 获取当前时间 格式2018-10-10 00:00:00
+ * @returns {string}
+ */
+util.getCurrentDatetime = function() {
+  let date = new Date();
+  let seperator1 = "-";
+  let seperator2 = " ";
+  let seperator3 = ":";
+  let year = date.getFullYear();
+  let month = date.getMonth() + 1;
+  let strDate = date.getDate();
+  let strHour = date.getHours();
+  let strMinute = date.getMinutes();
+  let strSecond = date.getSeconds();
+  if (month >= 1 && month <= 9) {
+    month = "0" + month;
+  }
+  if (strDate >= 0 && strDate <= 9) {
+    strDate = "0" + strDate;
+  }
+  return year + seperator1
+    + month + seperator1
+    + strDate + seperator2
+    + strHour + seperator3
+    + strMinute + seperator3
+    + strSecond ;
+};
+
+/**
+* 获取当前时间 格式20181010000000
+* @returns {string}
+*/
+util.getCurrentDatetime2 = function() {
+  let date = new Date();
+
+  let year = date.getFullYear();
+  let month = date.getMonth() + 1;
+  let strDate = date.getDate();
+  let strHour = date.getHours();
+  let strMinute = date.getMinutes();
+  let strSecond = date.getSeconds();
+  if (month >= 1 && month <= 9) {
+    month = "0" + month;
+  }
+  if (strDate >= 0 && strDate <= 9) {
+    strDate = "0" + strDate;
+  }
+  return year +""+ month +"" + strDate +""+ strHour +""+ strMinute +""+ strSecond+"" ;
+};
+
 export default util;

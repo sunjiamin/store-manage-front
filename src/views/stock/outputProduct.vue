@@ -5,7 +5,7 @@
         <Card>
           <Row class="operation  ">
             <Button @click="selectSalePerson" type="warning"  >选择出货员</Button>
-            <span  >当前销售员:【{{this.currentSalePerson.userName}}】</span>
+            <span>当前销售员:【{{this.currentSalePerson.userName}}】</span>
 
           </Row>
           <Row class="operation margin-top-10">
@@ -25,7 +25,7 @@
           </Row>
 
           <Row class="operation margin-top-10">
-            <Button @click="submitProductOutput" type="success" size="large" icon="jet">出库</Button>
+            <Button @click="submitProductOutput" type="success" :loading="enableOutput"  size="large" icon="jet">出库</Button>
           </Row>
 
         </Card>
@@ -67,6 +67,9 @@
         <FormItem label="当前库存" prop="curNum">
           <span  >{{productNumForm.curNum}}</span>
         </FormItem>
+        <FormItem label="参考出库单价" prop="curPrice">
+          <span  >{{productNumForm.curPrice}}</span>
+        </FormItem>
         <FormItem label="出库单价" prop="price">
           <Input v-model="productNumForm.price"/>
         </FormItem>
@@ -88,12 +91,12 @@
           </RadioGroup>
         </FormItem>
 
-        <FormItem label="未到账金额" prop="nopayAmount" >
-          <Input   v-model="productNumForm.nopayAmount"/>
-        </FormItem>
-
         <FormItem label="附加费" prop="surcharge" >
           <Input   v-model="productNumForm.surcharge"/>
+        </FormItem>
+
+        <FormItem label="总未到账金额" prop="nopayAmount" >
+          <Input   v-model="productNumForm.nopayAmount"/>
         </FormItem>
 
         <FormItem label="出库备注" prop="remark">
@@ -215,6 +218,8 @@
         },
         productNumForm: {
           curNum:"",
+          curPrice:"",//当前卖价
+          costPrice:"",//当前进价
           num:"",
           unit:"",
           price:"",
@@ -241,6 +246,10 @@
           ],
           nopayAmount:[
             { required: true, message: "未到款不能为空,没有请输入0", trigger: "blur" },
+            { validator: validateFloat, trigger: "blur" }
+          ],
+          surcharge:[
+            { required: true, message: "附加费，没有请输入0", trigger: "blur" },
             { validator: validateFloat, trigger: "blur" }
           ]
           // status: [
@@ -292,14 +301,15 @@
               return h("div", params.row.customer.name);
             }
           },
+
           {
-            title: "单位",
-            key: "unit",
+            title: "当前卖价",
+            key: "curPrice",
             width: 110,
             sortable: true
           },
           {
-            title: "单价",
+            title: "出货价",
             key: "price",
             width: 110,
             sortable: true
@@ -445,24 +455,24 @@
           },
           {
             title: "配件名",
-            key: "product",
-            render: (h, params) => {
-              return h("div", params.row.product.productName);
-            }
+            key: "productName",
+            // render: (h, params) => {
+            //   return h("div", params.row.product.productName);
+            // }
           },
           {
             title: "配件代码",
             key: "productCode",
-            render: (h, params) => {
-              return h("div", params.row.product.productCode);
-            }
+            // render: (h, params) => {
+            //   return h("div", params.row.product.productCode);
+            // }
           },
           {
             title: "规格",
             key: "productSpec",
-            render: (h, params) => {
-              return h("div", params.row.product.productSpec);
-            }
+            // render: (h, params) => {
+            //   return h("div", params.row.product.productSpec);
+            // }
           },
           {
             title: "库存",
@@ -596,7 +606,8 @@
         //当前销售员
         currentSalePerson:{},
         totalProduct: 0,
-        totalSalePerson:0
+        totalSalePerson:0,
+        enableOutput:false
       };
     },
     methods: {
@@ -715,7 +726,7 @@
             content: "您确认要导出所选 " + this.selectCount + " 条数据?",
             onOk: () => {
               this.$refs.exportTable.exportCsv({
-                filename: "用户数据"
+                filename: "出库记录"
               });
             }
           });
@@ -773,10 +784,10 @@
           this.productNumForm.productSpec=v.product.productSpec;
           this.productNumForm.productStock= v;
           this.productNumForm.curNum= v.productStock;
-
+          this.productNumForm.curPrice = v.product.productSalePrice;
+          this.productNumForm.costPrice = v.product.productPrice;
           this.modalTitleProductNum= "【"+this.productNumForm.productName+"】 出库";
           this.productNumModalVisible=true;
-
         }
       } ,
       cancel(){
@@ -786,78 +797,97 @@
       submitProduct(){
         this.$refs.productNumForm.validate(valid => {
           if (valid) {
-            let outputProduct={};
-            let isOk = true;
-            outputProduct.payStatus = this.productNumForm.payStatus;
-            outputProduct.nopayAmount = this.productNumForm.nopayAmount;
-            //payStatus=1 <-> nopayAmount=0  |  payStatus!=1 <-> nopayAmount>0
-            if(outputProduct.payStatus === 1){
-              isOk = outputProduct.nopayAmount === 0;
-            }else{
-              isOk = outputProduct.nopayAmount > 0;
-            }
-            if(outputProduct.nopayAmount > 0){
-              isOk = outputProduct.payStatus !==1;
-            }else{
-              isOk = outputProduct.payStatus ===1;
-            }
 
-            if(!isOk){
-              this.$Message.warning("收款状态和未到账金额不符合！！");
-            }else{
-
-              outputProduct.productId= this.productNumForm.productId;
-              outputProduct.productName= this.productNumForm.productName;
-              outputProduct.productCode= this.productNumForm.productCode;
-              outputProduct.productSpec= this.productNumForm.productSpec;
-              outputProduct.amount= parseFloat(this.productNumForm.price) * parseFloat(this.productNumForm.num);
-              outputProduct.surcharge = this.productNumForm.surcharge;
-              outputProduct.totalAmount = outputProduct.amount +  parseFloat(outputProduct.surcharge );
-              outputProduct.price= this.productNumForm.price;
-              outputProduct.num = this.productNumForm.num;
-              outputProduct.unit = this.productNumForm.unit;
-
-              outputProduct.remark = this.productNumForm.remark;
-
-
-              outputProduct.productStock=  this.productNumForm.productStock;
-              delete outputProduct.productStock.createTime;
-              delete outputProduct.productStock.updateTime;
-              delete outputProduct.productStock.product.createTime;
-              delete outputProduct.productStock.product.updateTime;
-              outputProduct.salePersonId = this.currentSalePerson.id;
-              outputProduct.salePersonName =  this.currentSalePerson.userName;
-
-              for (var i = 0;i<this.customerList.length;i++){
-                let e = this.customerList[i];
-                if(e.id ===  this.productNumForm.customerId){
-                  outputProduct.customer =e;
-                  outputProduct.customerId=e.id;
-                  break;
+            if( this.productNumForm.price <  this.productNumForm.costPrice){
+              this.$Modal.confirm({
+                title: "确认删除",
+                content: "您确认要配件出库价要比进价低吗?",
+                onOk: () => {
+                  this.submitValided();
                 }
-              }
-              delete outputProduct.customer.createTime;
-              delete outputProduct.customer.updateTime;
-              //选择一种商品入库
-              this.productList.push(outputProduct);
-              this.$refs.productNumForm.resetFields();
-              this.productNumModalVisible=false;
-              this.classModalVisible = false;
-
+              });
+            }else{
+              this.submitValided();
             }
           }
         });
 
+      },
+      submitValided(){
+        let outputProduct={};
+        let isOk = true;
+        outputProduct.payStatus = this.productNumForm.payStatus;
+        outputProduct.nopayAmount = this.productNumForm.nopayAmount;
+        if(outputProduct.payStatus === 1){
+          isOk = outputProduct.nopayAmount === 0;
+        }else{
+          isOk = outputProduct.nopayAmount > 0;
+        }
+        if(outputProduct.nopayAmount > 0){
+          isOk = outputProduct.payStatus !==1;
+        }else{
+          isOk = outputProduct.payStatus ===1;
+        }
+        if(!isOk){
+          this.$Message.warning("收款状态和未到账金额不符合！！");
+        }else{
+
+          outputProduct.productId= this.productNumForm.productId;
+          outputProduct.productName= this.productNumForm.productName;
+          outputProduct.productCode= this.productNumForm.productCode;
+          outputProduct.productSpec= this.productNumForm.productSpec;
+          outputProduct.amount= parseFloat(this.productNumForm.price) * parseFloat(this.productNumForm.num);
+          outputProduct.surcharge = this.productNumForm.surcharge;
+          if(outputProduct.surcharge === ''){
+            outputProduct.surcharge = 0;
+          }
+          outputProduct.totalAmount = outputProduct.amount +  parseFloat(outputProduct.surcharge );
+          outputProduct.price= this.productNumForm.price;
+          outputProduct.curPrice= this.productNumForm.curPrice;
+          outputProduct.costPrice= this.productNumForm.costPrice;
+          outputProduct.num = this.productNumForm.num;
+          outputProduct.unit = this.productNumForm.unit;
+
+          outputProduct.remark = this.productNumForm.remark;
+
+
+          outputProduct.productStock=  this.productNumForm.productStock;
+          delete outputProduct.productStock.createTime;
+          delete outputProduct.productStock.updateTime;
+          delete outputProduct.productStock.product.createTime;
+          delete outputProduct.productStock.product.updateTime;
+          outputProduct.salePersonId = this.currentSalePerson.id;
+          outputProduct.salePersonName =  this.currentSalePerson.userName;
+
+          for (var i = 0;i<this.customerList.length;i++){
+            let e = this.customerList[i];
+            if(e.id ===  this.productNumForm.customerId){
+              outputProduct.customer =e;
+              outputProduct.customerId=e.id;
+              break;
+            }
+          }
+          delete outputProduct.customer.createTime;
+          delete outputProduct.customer.updateTime;
+          //选择一种商品入库
+          this.productList.push(outputProduct);
+          this.$refs.productNumForm.resetFields();
+          this.productNumModalVisible=false;
+          this.classModalVisible = false;
+
+        }
       },
       //提交后台出库
       submitProductOutput() {
         if(this.productList.length>0){
           let url = "/outputWarehouse/add";
           this.submitLoading = true;
+          this.enableOutput = true;
           let paraData = {};
           paraData.outputWarehouseDetailList=JSON.stringify(this.productList);
           this.postRequest(url,paraData).then(res => {
             this.submitLoading = false;
+            this.enableOutput = false;
             if (res.success === true) {
               this.$Message.success("出库成功");
               this.init();

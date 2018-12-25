@@ -29,7 +29,7 @@
           </Row>
 
           <Row class="operation margin-top-10">
-            <Button @click="submitProductInput" type="success" size="large" icon="jet">入库</Button>
+            <Button @click="submitProductInput" type="success" :loading="enableInput" size="large" icon="jet">入库</Button>
           </Row>
 
         </Card>
@@ -63,24 +63,24 @@
 
     </Modal>
 
-    <Modal :title="modalTitleProductNum" v-model="productNumModalVisible" :mask-closable='false' :width="500">
-      <Form ref="productNumForm" :model="productNumForm" :label-width="70"   :rules="productNumFormValidate">
-        <FormItem label="单位" prop="unit">
-          <Select v-model="productNumForm.unit" placeholder="请选择">
-            <Option :value="0">件</Option>
-            <Option :value="1">个</Option>
-            <Option :value="2">壶</Option>
-            <Option :value="3">对</Option>
-            <Option :value="4">套</Option>
-            <Option :value="5">包</Option>
-            <Option :value="6">粒</Option>
-            <Option :value="7">条</Option>
-            <Option :value="8">片</Option>
-            <Option :value="9">桶</Option>
-          </Select>
-        </FormItem>
-        <FormItem label="单价" prop="price">
-          <Input v-model="productNumForm.price"/>
+    <Modal :title="modalTitleProductNum" v-model="productNumModalVisible" :mask-closable='false' :width="700">
+      <Form ref="productNumForm" :model="productNumForm" :label-width="80"   :rules="productNumFormValidate">
+        <!--<FormItem label="单位" prop="unit">-->
+          <!--<Select v-model="productNumForm.unit" placeholder="请选择">-->
+            <!--<Option :value="0">件</Option>-->
+            <!--<Option :value="1">个</Option>-->
+            <!--<Option :value="2">壶</Option>-->
+            <!--<Option :value="3">对</Option>-->
+            <!--<Option :value="4">套</Option>-->
+            <!--<Option :value="5">包</Option>-->
+            <!--<Option :value="6">粒</Option>-->
+            <!--<Option :value="7">条</Option>-->
+            <!--<Option :value="8">片</Option>-->
+            <!--<Option :value="9">桶</Option>-->
+          <!--</Select>-->
+        <!--</FormItem>-->
+        <FormItem label="当前进价"  >
+         <span>{{currentProductPrice}}</span>
         </FormItem>
         <FormItem label="数量" prop="num" >
           <Input   v-model="productNumForm.num"/>
@@ -151,6 +151,7 @@
         },
         //选择的商品列表
         productList:[],
+        currentProductPrice:"",
         errorPass: "",
         productNumFormValidate: {
           price: [
@@ -197,7 +198,7 @@
             sortable: true
           },
           {
-            title: "单价",
+            title: "当前进价",
             key: "price",
             width: 150,
             sortable: true
@@ -324,7 +325,8 @@
         data: [],
         DateProduct:[],
         exportData: [],
-        totalProduct: 0
+        totalProduct: 0,
+        enableInput:false
       };
     },
     methods: {
@@ -404,10 +406,12 @@
         if(this.productList.length>0){
           let url = "/inputWarehouse/add";
           this.submitLoading = true;
+          this.enableInput = true;
           let paraData = {};
           paraData.inputWarehouseDetailList=JSON.stringify(this.productList);
           this.postRequest(url,paraData).then(res => {
             this.submitLoading = false;
+            this.enableInput = false;
             if (res.success === true) {
               this.$Message.success("入库成功");
               this.init();
@@ -443,6 +447,7 @@
           this.productNumForm.productName=v.productName;
           this.productNumForm.productCode=v.productCode;
           this.productNumForm.productSpec=v.productSpec;
+          this.currentProductPrice = v.productPrice;
           this.productNumForm.product= v;
           this.modalTitleProductNum= "【"+this.productNumForm.productName+"】 入库";
           this.productNumModalVisible=true;
@@ -457,8 +462,8 @@
             product.productName= this.productNumForm.productName;
             product.productCode= this.productNumForm.productCode;
             product.productSpec= this.productNumForm.productSpec;
-            product.amount= parseFloat(this.productNumForm.price) * parseFloat(this.productNumForm.num);
-            product.price= this.productNumForm.price;
+            product.amount= parseFloat(this.currentProductPrice) * parseFloat(this.productNumForm.num);
+            product.price= this.currentProductPrice;
             product.num = this.productNumForm.num;
             product.unit = this.productNumForm.unit;
             product.product=  this.productNumForm.product;
